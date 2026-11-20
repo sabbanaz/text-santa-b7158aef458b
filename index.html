@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#cfe3f3">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Santa">
+<title>Santa Claus</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #111;
+    background:
+      radial-gradient(ellipse at 15% -10%, rgba(255,255,255,.75), transparent 46%),
+      radial-gradient(ellipse at 110% 110%, rgba(255,255,255,.4), transparent 42%),
+      #cfe3f3;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    touch-action: manipulation;
+  }
+  button, input { font-family: inherit; }
+  button { -webkit-tap-highlight-color: transparent; }
+
+  .snow {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .flake {
+    position: absolute;
+    top: -12px;
+    border-radius: 50%;
+    background: #fff;
+    animation: fall linear infinite;
+    will-change: transform;
+  }
+  @keyframes fall {
+    0% { transform: translate3d(0, -8vh, 0); }
+    100% { transform: translate3d(var(--dx), 110vh, 0); }
+  }
+
+  .app {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+  }
+
+  header {
+    position: relative;
+    flex: none;
+    text-align: center;
+    padding: calc(10px + env(safe-area-inset-top)) 52px 10px;
+    background: rgba(244, 249, 252, .86);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border-bottom: 0.5px solid rgba(40, 70, 100, .12);
+  }
+  .avatar {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 6px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #d7263d;
+    box-shadow: 0 0 0 3px #fff, 0 2px 8px rgba(40, 70, 100, .18);
+  }
+  .avatar svg, .av svg, .avatar img, .av img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  h1.name {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #6d6d72;
+    font-weight: 500;
+  }
+  .gear {
+    position: absolute;
+    right: 4px;
+    bottom: 6px;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: rgba(60, 60, 67, .55);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .gear:active { color: rgba(60, 60, 67, .9); }
+  .gear svg { width: 22px; height: 22px; display: block; }
+
+  .thread {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 12px 10px 16px;
+  }
+  .time {
+    text-align: center;
+    color: #66788a;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 12px 0 8px;
+    text-shadow: 0 1px 0 rgba(255,255,255,.4);
+  }
+  .time:first-child { margin-top: 2px; }
+  .who-label {
+    text-align: right;
+    font-size: 11px;
+    font-weight: 650;
+    color: #5e7388;
+    margin: 8px 8px 2px;
+    letter-spacing: .01em;
+  }
+  .row {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    margin-top: 2px;
+    padding: 0 2px;
+  }
+  .row.kid { justify-content: flex-end; }
+  .row.end { margin-bottom: 8px; }
+  .hidden { display: none !important; }
+  .av {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex: none;
+    background: #d7263d;
+    visibility: hidden;
+  }
+  .av.show { visibility: visible; }
+  .bubble {
+    max-width: min(76%, 440px);
+    padding: 8px 12px;
+    font-size: 16.5px;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .row.santa .bubble {
+    background: #fff;
+    color: #111;
+    border-radius: 18px;
+    border-bottom-left-radius: 18px;
+    box-shadow: 0 1px 1.5px rgba(40, 70, 100, .08);
+  }
+  .row.kid .bubble {
+    background: #007aff;
+    color: #fff;
+    border-radius: 18px;
+  }
+  .bubble.tail.santa-tail { border-bottom-left-radius: 5px; }
+  .bubble.tail.kid-tail { border-bottom-right-radius: 5px; }
+  .row.in { animation: rise .22s ease-out; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .typing-label {
+    margin: 8px 0 2px 38px;
+    font-size: 12px;
+    color: #5c7084;
+    font-weight: 600;
+  }
+  .bubble.typing {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 54px;
+    min-height: 36px;
+  }
+  .bubble.typing i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #8e8e93;
+    display: block;
+    animation: blink 1.2s infinite ease-in-out;
+  }
+  .bubble.typing i:nth-child(2) { animation-delay: .15s; }
+  .bubble.typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink {
+    0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+    30% { transform: translateY(-3px); opacity: 1; }
+  }
+
+  .composer {
+    flex: none;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: rgba(244, 249, 252, .92);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border-top: 0.5px solid rgba(40, 70, 100, .12);
+  }
+  .composer input {
+    flex: 1;
+    height: 36px;
+    border-radius: 18px;
+    border: 1px solid rgba(60, 80, 100, .18);
+    background: #fff;
+    color: #111;
+    font-size: 16px;
+    padding: 0 14px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .composer input:focus { border-color: rgba(0, 122, 255, .55); }
+  .composer input::placeholder { color: #8e8e93; }
+  .send {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: #d1d1d6;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    flex: none;
+    padding: 0;
+    cursor: default;
+  }
+  .send.ready { background: #007aff; cursor: pointer; }
+  .send svg { width: 18px; height: 18px; display: block; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(18, 32, 48, .34);
+    display: flex;
+    justify-content: center;
+    padding: 18px 12px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay.center { align-items: center; }
+  .overlay.bottom { align-items: flex-end; padding-bottom: 0; }
+  .card, .sheet {
+    width: min(440px, 100%);
+    background: #f2f2f7;
+    box-shadow: 0 12px 40px rgba(20, 40, 60, .25);
+  }
+  .card {
+    border-radius: 18px;
+    padding: 22px 18px 18px;
+  }
+  .sheet {
+    border-radius: 16px 16px 0 0;
+    max-height: min(92dvh, 860px);
+    overflow: auto;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+    width: min(520px, 100%);
+  }
+  .card h2, .sheet h2 {
+    margin: 0;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+  .hint {
+    margin: 6px 0 16px;
+    text-align: center;
+    color: #6d6d72;
+    font-size: 13px;
+  }
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 0 0 18px;
+    height: 16px;
+  }
+  .dots b {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid #1c1c1e;
+    display: block;
+  }
+  .dots b.on { background: #1c1c1e; }
+  .dots.shake { animation: shake .36s linear; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 14px;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  .key {
+    height: 62px;
+    border: 0;
+    border-radius: 31px;
+    background: #fff;
+    font-size: 28px;
+    font-weight: 500;
+    color: #111;
+    box-shadow: 0 1px 2px rgba(20, 40, 60, .08);
+  }
+  .key:active { background: #e5e5ea; }
+  .key.ghost { background: transparent; box-shadow: none; font-size: 16px; font-weight: 600; color: #007aff; }
+  .cancel {
+    display: block;
+    margin: 14px auto 0;
+    border: 0;
+    background: transparent;
+    color: #007aff;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 8px 16px;
+  }
+
+  .sheet-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: -12px;
+    background: #f2f2f7;
+    padding: 6px 0 8px;
+    z-index: 1;
+  }
+  .sheet-top h2 { flex: 1; }
+  .done {
+    border: 0;
+    background: transparent;
+    color: #007aff;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 6px;
+    min-width: 56px;
+    text-align: right;
+  }
+  .sheet-top .spacer { min-width: 56px; }
+  .kid-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+    margin: 10px 0;
+    box-shadow: 0 1px 2px rgba(20, 40, 60, .05);
+  }
+  .kid-card h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .kid-card .empty {
+    margin: 0;
+    color: #8e8e93;
+    font-size: 15px;
+  }
+  .k {
+    margin: 8px 0 2px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #8e8e93;
+  }
+  .v { margin: 0; font-size: 16px; line-height: 1.35; }
+  .wishes { margin: 4px 0 0; padding: 0 0 0 18px; }
+  .wishes li { margin: 3px 0; font-size: 16px; }
+  .note {
+    color: #6d6d72;
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 4px 2px 12px;
+  }
+  .clear {
+    width: 100%;
+    border: 0;
+    background: #fff;
+    color: #ff3b30;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 4px;
+  }
+  .confirm {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 4px;
+    text-align: center;
+  }
+  .confirm p { margin: 0 0 10px; font-size: 15px; }
+  .confirm-row { display: flex; gap: 10px; }
+  .confirm-row button {
+    flex: 1;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 650;
+  }
+  .confirm-row .yes { background: #ff3b30; color: #fff; }
+  .confirm-row .no { background: #e5e5ea; color: #111; }
+
+  .noscript {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    text-align: center;
+    background: #e7f2fa;
+  }
+  .noscript p { max-width: 320px; font-size: 17px; line-height: 1.4; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flake, .row.in, .bubble.typing i, .dots.shake { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="snow" id="snow" aria-hidden="true"></div>
+  <noscript>
+    <div class="noscript">
+      <p><strong>Open this in Safari.</strong><br>If you tapped the file in Files, use the share button and choose Safari. The chat needs Safari so Santa can write back.</p>
+    </div>
+  </noscript>
+  <div class="app">
+    <header>
+      <div class="avatar" id="avatar">
+        <img src="data:image/jpeg;base64,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" alt="Santa Claus">
+      </div>
+      <h1 class="name">Santa Claus</h1>
+      <p class="sub">North Pole</p>
+      <button type="button" class="gear" id="gear" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M19.4 13.1a7.8 7.8 0 0 0 .1-2.2l2-1.6a.5.5 0 0 0 .1-.6l-1.9-3.3a.5.5 0 0 0-.6-.2l-2.4 1a7.6 7.6 0 0 0-1.9-1.1l-.4-2.5a.5.5 0 0 0-.5-.4h-3.8a.5.5 0 0 0-.5.4l-.4 2.5a7.6 7.6 0 0 0-1.9 1.1l-2.4-1a.5.5 0 0 0-.6.2L2.4 8.7a.5.5 0 0 0 .1.6l2 1.6a7.8 7.8 0 0 0 0 2.2l-2 1.6a.5.5 0 0 0-.1.6l1.9 3.3a.5.5 0 0 0 .6.2l2.4-1a7.6 7.6 0 0 0 1.9 1.1l.4 2.5a.5.5 0 0 0 .5.4h3.8a.5.5 0 0 0 .5-.4l.4-2.5a7.6 7.6 0 0 0 1.9-1.1l2.4 1a.5.5 0 0 0 .6-.2l1.9-3.3a.5.5 0 0 0-.1-.6l-2-1.6zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"/>
+        </svg>
+      </button>
+    </header>
+    <main class="thread" id="thread" role="log" aria-live="polite" aria-relevant="additions"></main>
+    <form class="composer" id="composer" autocomplete="off">
+      <input id="draft" type="text" placeholder="iMessage" aria-label="Message" maxlength="500" enterkeyhint="send" autocapitalize="sentences" autocomplete="off" autocorrect="on">
+      <button type="submit" class="send" id="send" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <div class="overlay center hidden" id="passcode" role="dialog" aria-modal="true" aria-labelledby="code-title">
+    <div class="card">
+      <h2 id="code-title">Enter code</h2>
+      <p class="hint">Four numbers</p>
+      <div class="dots" id="dots" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
+      <div class="pad" id="pad">
+        <button type="button" class="key" data-digit="1">1</button>
+        <button type="button" class="key" data-digit="2">2</button>
+        <button type="button" class="key" data-digit="3">3</button>
+        <button type="button" class="key" data-digit="4">4</button>
+        <button type="button" class="key" data-digit="5">5</button>
+        <button type="button" class="key" data-digit="6">6</button>
+        <button type="button" class="key" data-digit="7">7</button>
+        <button type="button" class="key" data-digit="8">8</button>
+        <button type="button" class="key" data-digit="9">9</button>
+        <button type="button" class="key ghost" id="code-cancel">Cancel</button>
+        <button type="button" class="key" data-digit="0">0</button>
+        <button type="button" class="key ghost" id="code-back" aria-label="Delete">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay bottom hidden" id="parent" role="dialog" aria-modal="true" aria-labelledby="parent-title">
+    <div class="sheet">
+      <div class="sheet-top">
+        <span class="spacer"></span>
+        <h2 id="parent-title">North Pole notes</h2>
+        <button type="button" class="done" id="parent-done">Done</button>
+      </div>
+      <p class="note">What they told Santa. He never promises a specific gift.</p>
+      <div id="parent-body"></div>
+      <button type="button" class="clear" id="clear-btn">Clear conversation</button>
+      <div class="confirm hidden" id="confirm">
+        <p>Clear the whole chat for Oliver and Ava?</p>
+        <div class="confirm-row">
+          <button type="button" class="yes" id="clear-yes">Clear</button>
+          <button type="button" class="no" id="clear-no">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var KEY = "text-santa-v1";
+  var FAST = typeof location !== "undefined" && /(?:\?|&)fast=1(?:&|$)/.test(location.search);
+  var REDUCE = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var CODE = "1225";
+  var PHASES = ["ask_name", "naughty", "nice_thing", "wishes", "more_wishes", "reindeer", "cookies", "done"];
+  var REINDEER = ["dasher", "dancer", "prancer", "vixen", "comet", "cupid", "donner", "blitzen", "rudolph"];
+
+  function freshState() {
+    return {
+      messages: [],
+      phase: "ask_name",
+      speaker: null,
+      kids: {
+        oliver: blankKid(),
+        ava: blankKid(),
+        both: blankKid()
+      },
+      cursors: {},
+      lastLine: "",
+      echoCursor: 0,
+      jokeCursor: 0
+    };
+  }
+
+  function blankKid() {
+    return { verdict: null, niceThing: null, wishes: [] };
+  }
+
+  function normalize(s) {
+    return String(s || "")
+      .toLowerCase()
+      .replace(/[’‘]/g, "'")
+      .replace(/'/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function damerau(a, b) {
+    if (a === b) return 0;
+    var al = a.length, bl = b.length;
+    if (!al) return bl;
+    if (!bl) return al;
+    var dp = [];
+    for (var i = 0; i <= al; i++) {
+      dp[i] = [i];
+    }
+    for (var j = 1; j <= bl; j++) dp[0][j] = j;
+    for (i = 1; i <= al; i++) {
+      for (j = 1; j <= bl; j++) {
+        var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+        var v = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a.charAt(i - 1) === b.charAt(j - 2) && a.charAt(i - 2) === b.charAt(j - 1)) {
+          v = Math.min(v, dp[i - 2][j - 2] + 1);
+        }
+        dp[i][j] = v;
+      }
+    }
+    return dp[al][bl];
+  }
+
+  function windowClose(squashed, target, maxDist) {
+    var minL = target.length - 1;
+    var maxL = target.length + 1;
+    if (minL < 3) minL = 3;
+    for (var len = minL; len <= maxL; len++) {
+      for (var i = 0; i + len <= squashed.length; i++) {
+        if (damerau(squashed.slice(i, i + len), target) <= maxDist) return true;
+      }
+    }
+    return false;
+  }
+
+  function wordMatchesOliver(w) {
+    if (w === "oliver" || w === "ollie" || w === "olly" || w === "oli") return true;
+    if (w.length < 5 || w.length > 9) return false;
+    return damerau(w, "oliver") <= 2;
+  }
+
+  function wordMatchesAva(w) {
+    if (w === "ava") return true;
+    if (w.length < 3 || w.length > 5) return false;
+    var ban = { and: 1, are: 1, dad: 1, the: 1, was: 1, has: 1, her: 1, she: 1, you: 1, for: 1, not: 1, but: 1, can: 1, how: 1, old: 1, mom: 1, ava: 0 };
+    if (ban[w]) return false;
+    return damerau(w, "ava") <= 1;
+  }
+
+  function detectWho(raw) {
+    var text = normalize(raw);
+    if (!text) return null;
+    var words = text.split(" ").filter(Boolean);
+    var squ = words.join("");
+    var oliver = false;
+    var ava = false;
+    var i;
+    for (i = 0; i < words.length; i++) {
+      if (wordMatchesOliver(words[i])) oliver = true;
+      if (wordMatchesAva(words[i])) ava = true;
+    }
+    if (!oliver && /oliver|ollie|olly/.test(squ)) oliver = true;
+    if (!oliver && squ.length <= 28 && windowClose(squ, "oliver", 1)) oliver = true;
+    if (!ava && text.length < 48 && /ava/.test(squ) && !/available|avalanche|avatar|avant/.test(squ)) ava = true;
+    if (/olivers sister|olivers sis/.test(squ) && !/\bava\b/.test(text)) return "ava";
+    if (/avas brother|avas bro/.test(squ) && !oliver) return "oliver";
+    var bothPhrase = /\b(both of us|both|together|the two of us|two of us|we both|us both)\b/.test(text);
+    if (oliver && ava) return "both";
+    if (bothPhrase) return "both";
+    if (oliver) return "oliver";
+    if (ava) return "ava";
+    return null;
+  }
+
+  function hasFuzzy(text, target, maxDist) {
+    var words = text.split(" ");
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (Math.abs(w.length - target.length) > maxDist) continue;
+      if (damerau(w, target) <= maxDist) return true;
+    }
+    return false;
+  }
+
+  function detectVerdict(raw) {
+    var t = normalize(raw);
+    if (!t) return null;
+    if (/^(good night|goodnight)$/.test(t)) return null;
+    if (/\bnot bad\b/.test(t) && !/\bnaughty\b/.test(t)) return "nice";
+    var little = /\b(a little|a bit|kinda|kind of|sort of|somewhat|a tad|little bit)\b/.test(t);
+    var naughty = hasFuzzy(t, "naughty", 2) || /\b(nauty|naughy|noghty)\b/.test(t) || /\b(bad|trouble|mischief)\b/.test(t);
+    var nice = hasFuzzy(t, "nice", 1) || /\b(good|well behaved|wellbehaved)\b/.test(t);
+    var mixedPhrase = /\b(half and half|in the middle|so so|naughty and nice|nice and naughty|a little of both|bit of both|kind of both|i was both)\b/.test(t)
+      || /^both$/.test(t);
+    if (/\bnot nice\b/.test(t) && !nice) return "naughty";
+    if ((little && naughty) || (naughty && nice) || mixedPhrase) return "mixed";
+    if (/\bmostly naughty\b/.test(t)) return "mixed";
+    if (naughty) return "naughty";
+    if (nice || /\bmostly nice\b/.test(t)) return "nice";
+    if (/\b(i|we)\s+(helped|shared|cleaned|hugged|gave|listened|made|let)\b/.test(t)) return "nice";
+    if (/\b(helped|shared with|cleaned my|cleaned our|was kind|were kind)\b/.test(t)) return "nice";
+    return null;
+  }
+
+  function extractNiceThing(raw) {
+    var original = String(raw || "").trim().replace(/[’‘]/g, "'");
+    if (/^(i don'?t know|idk|nothing|not sure|i can'?t remember|i forget|i forgot|um+|uh+|no|nope|nah)$/i.test(original)) return null;
+    if (/^(well[, ]+|so[, ]+|ok[, ]+|okay[, ]+)?(i've been |ive been |i was |i am |i'm |im |we were |we've been |we are |we're )?(a little |a bit |kind of |kinda |sort of |mostly )?(naughty|nice|both|good|bad)( this year)?[.!?]*$/i.test(original)) return null;
+    var stripped = original
+      .replace(/^(um+|uh+|well|so|ok|okay)[,!\s]+/i, "")
+      .replace(/^(i've been|ive been|i was|i am|i'm|im|we were|we've been|weve been|we are|we're)\s+/i, "")
+      .replace(/^(a little|a bit|kind of|kinda|sort of|mostly|pretty|really|very)\s+/i, "")
+      .replace(/^(naughty|nice|both|good|bad)\b(\s+this year)?[\s,.]*(and|but)?\s*/i, "")
+      .replace(/^[\s,.\-!]+/, "")
+      .replace(/[.!\s]+$/, "")
+      .trim()
+      .replace(/\s+/g, " ");
+    if (!/[a-z]/i.test(stripped)) return null;
+    if (/\b(helped|shared|made|gave|cleaned|hugged|let|played|told|picked|brought|loved|read|wrote|drew|built|fed|walked|baked|raked|set the|did the|did my)\b/i.test(stripped)) {
+      return stripped;
+    }
+    if (stripped.split(/\s+/).length >= 4) return stripped;
+    return null;
+  }
+
+  function isUnsure(raw) {
+    var t = normalize(raw);
+    return /^(i dont know|idk|nothing|not sure|i cant remember|i cannot remember|um|uh|no|nope|nah|i forget|i forgot|i cant think|cant think of one)$/.test(t);
+  }
+
+  function isWishDecline(raw) {
+    var t = normalize(raw);
+    if (!t) return false;
+    if (/^(no|nope|nah|no thanks|no thank you|nothing|nothing else|none|all done|done|finished|im good|i am good|were good|we are good|thats it|thats all|that is it|that is all|i think thats it|i think thats all|nothing more|no more|thats everything|we are done|im done|all set|that is everything|i dont want anything|i dont want any|nothing i want)$/.test(t)) return true;
+    if (/^(no|nope|nah|nothing|done|finished)\b/.test(t) && t.split(" ").length <= 6 && /\b(it|all|else|more|done|thanks|thank|good|set|now)\b/.test(t) && !/\b(want|like|wish|bike|doll|toy|game|book|lego|puppy|please bring)\b/.test(t)) return true;
+    if (/\b(thats it|thats all|that is it|nothing else|all done|no more|im done|were done)\b/.test(t) && t.split(" ").length <= 6) return true;
+    return false;
+  }
+
+  function parseWishes(raw) {
+    var t = String(raw || "").trim();
+    t = t.replace(/^(well[, ]+|please[, ]+)*(i want|i would like|id like|i'd like|i’d like|i wish for|we want|we would like|wed like|we'd like|can i have|can we have|i hope for|we hope for|please bring me|will you bring me|can you bring me|bring me|i wish|we wish|for christmas[, ]*(i want|we want|id like)?)\s+/i, "");
+    var pairs = [
+      ["mac and cheese", "⟦macandcheese⟧"],
+      ["peanut butter and jelly", "⟦pbj⟧"],
+      ["bow and arrow", "⟦bow⟧"],
+      ["hide and seek", "⟦hide⟧"],
+      ["cookies and cream", "⟦cac⟧"],
+      ["cookies and milk", "⟦cam⟧"]
+    ];
+    var lower = t;
+    for (var p = 0; p < pairs.length; p++) {
+      var re = new RegExp(pairs[p][0], "ig");
+      lower = lower.replace(re, pairs[p][1]);
+    }
+    var parts = lower.split(/\s*,\s*|\s+&\s+|\s+and\s+/i);
+    var out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var s = parts[i].trim();
+      for (p = 0; p < pairs.length; p++) s = s.split(pairs[p][1]).join(pairs[p][0]);
+      s = s.replace(/^[\s,.\-]+|[\s.!?]+$/g, "").trim();
+      if (s.length < 2) continue;
+      if (/^(please|thanks|thank you|santa|um|uh|well|just)$/i.test(s)) continue;
+      if (isWishDecline(s)) continue;
+      if (s.length > 80) s = s.slice(0, 80).trim();
+      out.push(s);
+    }
+    return out;
+  }
+
+  function detectReindeer(raw) {
+    var t = normalize(raw);
+    if (/\b(all of them|all|every one|everyone|everybody)\b/.test(t)) return ["all"];
+    if (/red nose|red nosed|shiny nose/.test(t)) return ["rudolph"];
+    var found = [];
+    var words = t.split(" ");
+    var names = REINDEER.slice();
+    for (var n = 0; n < names.length; n++) {
+      var name = names[n];
+      var hit = false;
+      if (name === "rudolph" && /\brudy\b|\brudolf\b|\brudolph\b/.test(t)) hit = true;
+      for (var i = 0; i < words.length && !hit; i++) {
+        var w = words[i];
+        var max = name.length >= 6 ? 2 : 1;
+        if (Math.abs(w.length - name.length) <= max && damerau(w, name) <= max) hit = true;
+      }
+      if (hit) found.push(name);
+    }
+    return found;
+  }
+
+  function detectYesNo(raw) {
+    var t = normalize(raw);
+    if (/^(no|nope|nah|not this year|we wont|we will not|i wont|no thanks|none)$/.test(t)) return "no";
+    if (/\bno (cookies|milk|thanks)\b/.test(t) && !/\byes\b/.test(t)) return "no";
+    if (/^(yes|yeah|yep|yup|sure|ok|okay|of course|we will|i will|definitely|absolutely)\b/.test(t)) return "yes";
+    if (/\b(cookies|milk|carrots|both)\b/.test(t) && !/\bno\b/.test(t)) return "yes";
+    return null;
+  }
+
+  function daysUntilChristmas(now) {
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var christmas = new Date(now.getFullYear(), 11, 25);
+    if (start.getTime() > christmas.getTime()) {
+      christmas = new Date(now.getFullYear() + 1, 11, 25);
+    }
+    return Math.round((christmas.getTime() - start.getTime()) / 86400000);
+  }
+
+  function christmasCopy(now) {
+    now = now || new Date();
+    var n = daysUntilChristmas(now);
+    if (n === 0) return "Today is Christmas! I hope the morning is full of paper and laughing.";
+    if (n === 1) return "One more sleep. Tomorrow is Christmas, and the reindeer are already stamping.";
+    if (now.getMonth() === 11 && now.getDate() > 25) {
+      return "Christmas just passed, and the elves are napping in their hats. Next Christmas is " + n + " days away, already a tiny mark on my calendar.";
+    }
+    return "There are " + n + " days until Christmas. I have them counted on a big red calendar.";
+  }
+
+  function cap(s) {
+    s = String(s || "").trim();
+    if (!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function clip(s, n) {
+    s = String(s || "").replace(/\s+/g, " ").trim();
+    if (s.length <= n) return s;
+    return s.slice(0, n - 1).trim() + "…";
+  }
+
+  function kidName(speaker) {
+    if (speaker === "oliver") return "Oliver";
+    if (speaker === "ava") return "Ava";
+    return "Oliver and Ava";
+  }
+
+  function siblingLine(speaker) {
+    if (speaker === "oliver") return "be extra kind to Ava";
+    if (speaker === "ava") return "be extra kind to Oliver";
+    return "be kind to each other";
+  }
+
+  function kindness(speaker) {
+    return "There's still time to get on the nice list. You could help at home, " + siblingLine(speaker) + ", and listen to Mom and Dad.";
+  }
+
+  function pick(state, key, lines) {
+    if (!state.cursors) state.cursors = {};
+    var i = state.cursors[key] || 0;
+    var line = lines[i % lines.length];
+    if (line === state.lastLine && lines.length > 1) {
+      i++;
+      line = lines[i % lines.length];
+    }
+    state.cursors[key] = (i + 1) % lines.length;
+    state.lastLine = line;
+    return line;
+  }
+
+  function rawDelay(text) {
+    var len = String(text || "").length;
+    var base = 900 + Math.min(1800, len * 24);
+    var jitter = (len * 47) % 280;
+    return Math.max(1000, Math.min(3000, base + jitter - 100));
+  }
+
+  function typingDelay(text) {
+    if (FAST) return 30;
+    if (REDUCE) return 180;
+    return rawDelay(text);
+  }
+
+  function safetyReply(raw) {
+    var t = String(raw || "");
+    var n = normalize(t);
+    if (/\$\s?\d/.test(t) || /\b\d+\s*(dollars|bucks)\b/i.test(t) || /\b(how much|what does it cost|the price)\b/.test(n)) {
+      return "We don't talk about money at the North Pole. Tell me the wish, not a price.";
+    }
+    if (/\b(i want|gimme|give me|can i have)\b/.test(n) && /\b(money|dollars|cash|bucks)\b/.test(n)) {
+      return "We don't talk about money at the North Pole. Wishes are wishes, and that's enough.";
+    }
+    if (/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(t) || /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(t)) {
+      return "Keep that to yourself. I don't need numbers or addresses, and I'm glad you wrote.";
+    }
+    if (/\d{1,6}\s+[a-z0-9.' ]+\s+(street|st|avenue|ave|road|rd|drive|dr|lane|ln|court|ct|blvd|boulevard|way)\b/i.test(t)) {
+      return "Don't send me an address. I already know the way. Let's talk about Christmas instead.";
+    }
+    if (/\b(my address|my phone|phone number|what school|my school is|i live at)\b/.test(n)) {
+      return "You don't need to tell me that. I find my way without addresses, numbers, or schools.";
+    }
+    if (/\b(send you a (photo|picture|pic)|send a (photo|picture)|take a selfie|heres a picture|here is a picture)\b/.test(n)) {
+      return "No pictures needed. A kind heart shows up just fine from the North Pole.";
+    }
+    return null;
+  }
+
+  var JOKES = [
+    "What do you call Santa when he stops moving? Santa Pause.",
+    "Why did the cookie go to the doctor? He felt crummy.",
+    "What does a reindeer say before a joke? This one's gonna sleigh you.",
+    "What do elves learn in school? The elf-abet.",
+    "Why are Christmas trees bad at sewing? They keep dropping their needles.",
+    "How does a snowman get to work? By icicle."
+  ];
+
+  function sideReply(state, id) {
+    var name = state.speaker ? kidName(state.speaker) : "little one";
+    if (id === "real") {
+      return pick(state, "real", [
+        "I'm as real as a sleigh bell in a quiet room. And I'm right here.",
+        "Ho ho, very real. My beard is full of snow and my cocoa is getting cold while we talk."
+      ]);
+    }
+    if (id === "fly") {
+      return pick(state, "fly", [
+        "Magic oats, a clear night, and Rudolph out front. I just hold on to my hat.",
+        "They fly when the starlight is right. Even the elves stop pretending they understand it."
+      ]);
+    }
+    if (id === "live") {
+      return pick(state, "live", [
+        "At the North Pole, in a red house with a workshop that glows all night. Mrs. Claus keeps the path shoveled, mostly.",
+        "The North Pole. If you listen on a still night, you can almost hear the hammers."
+      ]);
+    }
+    if (id === "old") {
+      return pick(state, "old", [
+        "Old enough to remember when your mom and dad were small, and young enough to fit down a chimney. North Pole years are funny that way.",
+        "Older than the snow on the roof, younger than I look when I laugh. That's all I'll say. Ho ho."
+      ]);
+    }
+    if (id === "rudolph") {
+      return pick(state, "rudolph", [
+        "Rudolph is in the barn, polishing his nose on a soft cloth. He says hello. The whole stable just lit up.",
+        "Rudolph is practicing his proud walk. He asked me not to tell you. I told you."
+      ]);
+    }
+    if (id === "elf") {
+      return pick(state, "elf", [
+        "The elves are up to their hats in ribbon right now. They said to wave — especially Pip, the smallest, who is standing on a stool.",
+        "They're too busy to come to the phone, but every elf in the wrapping room just waved a scrap of paper at you."
+      ]);
+    }
+    if (id === "days") return christmasCopy(new Date());
+    if (id === "joke") {
+      var joke = JOKES[state.jokeCursor % JOKES.length];
+      state.jokeCursor = (state.jokeCursor + 1) % JOKES.length;
+      state.lastLine = joke;
+      return joke;
+    }
+    if (id === "love") {
+      return pick(state, "love", [
+        "I love you too, " + name + ". That's the warmest thing in the whole North Pole.",
+        "I love you too. Hold onto that. It shines farther than any star I steer by."
+      ]);
+    }
+    if (id === "chimney") {
+      return "Very carefully, and with a little magic. I always get where I'm going. You don't need to tell me the way.";
+    }
+    if (id === "mrs") {
+      return pick(state, "mrs", [
+        "Mrs. Claus is in the kitchen, flour on her cheek, stealing a cookie she thinks I don't see. She says hello.",
+        "Mrs. Claus says the cocoa is hot and the night is kind. She sends a hug."
+      ]);
+    }
+    if (id === "weather") {
+      return pick(state, "weather", [
+        "Snowing, of course. Sideways today. The reindeer are pretending to mind.",
+        "Cold, bright, and full of snow. A proper North Pole day. ❄️"
+      ]);
+    }
+    if (id === "thanks") return "You are very welcome. Being thanked by you is a gift of its own.";
+    if (id === "hoho") return "Ho ho ho! I heard that over the wind.";
+    if (id === "howare") {
+      return pick(state, "howare", [
+        "My boots are warm and the list is long. That's a very good day.",
+        "Happy as a reindeer with a carrot. Busy, too."
+      ]);
+    }
+    if (id === "herd") return "Full of oats and showing off. Donner is restless, and Rudolph is glowing about it.";
+    if (id === "cookie") return "Shortbread, if you're asking. The reindeer lobby hard for carrots.";
+    if (id === "scared") return "You are safe. Christmas Eve is a kind night. If it's dark, hold still and think of bells.";
+    if (id === "elves") return "Small, quick, and usually dusted in glitter they say is not their fault. Pointy hats, every one.";
+    if (id === "know") {
+      return state.speaker
+        ? "I know you, " + kidName(state.speaker) + ". And I remember when your mom and dad were the ones leaving cookies."
+        : "I know a kind heart when it writes to me. Your mom and dad were on the nice list too, once upon a time.";
+    }
+    if (id === "promise") return "I never promise one exact gift. I'll do my very best, and the elves are already busy!";
+    if (id === "bye") {
+      if (state.phase === "done") return "Goodnight. I'll be thinking of you. Merry Christmas.";
+      return "I'll let you go in a moment. Stay for one more thing if you can.";
+    }
+    if (id === "wantyou") return "Me? I have a warm house, a full stable, and this chat. This part is about you.";
+    return null;
+  }
+
+  function matchSide(state, raw) {
+    var t = normalize(raw);
+    if (!t) return null;
+    var id = null;
+    if (/are you real|is santa real|youre not real|you are not real|do you exist|are you actually real|are you fake|santas not real/.test(t)) id = "real";
+    else if (/how (do|does|can) (the )?(reindeer|they) fly|why (do|can) (the )?reindeer fly|reindeer really fly/.test(t)) id = "fly";
+    else if (/where do you live|wheres your house|where is your house|where do you stay|where is the north pole|wheres the north pole/.test(t)) id = "live";
+    else if (/how old are you|whats your age|how old is santa|how old r you/.test(t)) id = "old";
+    else if (/whats rudolph doing|what is rudolph doing|wheres rudolph|where is rudolph|hows rudolph|how is rudolph|whats rudolph up to|what is rudolph up to/.test(t)) id = "rudolph";
+    else if (/talk to an elf|speak to an elf|can i (talk|speak|meet) (to |with )?(an |the )?elf|are the elves|can the elves/.test(t)) id = "elf";
+    else if (/how many days|days until christmas|days till christmas|days to christmas|how long until christmas|how long till christmas|when is christmas|how many sleeps|sleeps until|is it christmas yet|how close is christmas|how many more days/.test(t)) id = "days";
+    else if (/tell me a joke|tell a joke|got a joke|know any jokes|say a joke|make me laugh|another joke|tell me another/.test(t)) id = "joke";
+    else if (/\bi love you\b|\blove you santa\b|\bwe love you\b|\bilu\b|\blove u santa\b/.test(t)) id = "love";
+    else if (/down the chimney|fit (down |in )?the chimney|how do you get in|come down the chimney|squeeze down/.test(t)) id = "chimney";
+    else if (/mrs claus|ms claus|missus claus|how is mrs|wheres mrs/.test(t)) id = "mrs";
+    else if (/whats the weather|what is the weather|is it snowing|hows the weather|is it cold there|is it snowing there/.test(t)) id = "weather";
+    else if (/^(thanks|thank you|thank you santa|thanks santa)[.!]*$/.test(t)) id = "thanks";
+    else if (/^(ho ho ho|hohoho)[.!]*$/.test(t)) id = "hoho";
+    else if (/how are the reindeer|howre the reindeer|how r the reindeer/.test(t)) id = "herd";
+    else if (/how are you|how r you|howre you|hows it going|how are things/.test(t)) id = "howare";
+    else if (/your favorite cookie|what cookies do you like|do you like cookies|do you eat the cookies/.test(t)) id = "cookie";
+    else if (/\bim scared\b|\bi am scared\b|i had a nightmare|its too dark|i am afraid|im afraid of the dark/.test(t)) id = "scared";
+    else if (/what do elves look like|what are the elves like|who are the elves/.test(t)) id = "elves";
+    else if (/do you know me|do you know my mom|do you know my dad|do you remember me/.test(t)) id = "know";
+    else if (/do you promise|promise ill get|will i get everything|can you bring everything|are you gonna bring everything|will i get it all/.test(t)) id = "promise";
+    else if (/what do you want for christmas|what do you wish for|what would you like/.test(t)) id = "wantyou";
+    else if (/^(bye|goodbye|goodnight|good night|night night|gotta go|i have to go|see you|see ya)[.!]*$/.test(t)) id = "bye";
+    if (!id) return null;
+    if (id === "promise" && (state.phase === "wishes" || state.phase === "more_wishes")) {
+      if (parseWishes(raw).length) return null;
+    }
+    if (id === "love" && (state.phase === "naughty" || state.phase === "nice_thing") && detectVerdict(raw)) return null;
+    return sideReply(state, id);
+  }
+
+  function nudge(state) {
+    var map = {
+      ask_name: [
+        "So — Oliver, Ava, or both?",
+        "Who's texting me tonight, Oliver or Ava?"
+      ],
+      naughty: [
+        "When you're ready: naughty, nice, or a little of both, and one nice thing you did.",
+        "Tell me honestly — naughty or nice? And one kind thing from this year."
+      ],
+      nice_thing: [
+        "And one nice thing you did?",
+        "I'd still love to hear one kind thing you did."
+      ],
+      wishes: [
+        "What would you like for Christmas?",
+        "What should I write down for Christmas?"
+      ],
+      more_wishes: [
+        "Anything else?",
+        "Any other wish, or is that it?"
+      ],
+      reindeer: [
+        "Which reindeer is your favorite?",
+        "The stable is listening. Who's your favorite reindeer?"
+      ],
+      cookies: [
+        "Will you leave cookies and milk?",
+        "Cookies and milk on Christmas Eve — yes or no?"
+      ],
+      done: [
+        "If it's someone else's turn, tell me their name.",
+        "I'm still by the fire if Oliver or Ava wants a turn."
+      ]
+    };
+    return pick(state, "nudge-" + state.phase, map[state.phase] || map.done);
+  }
+
+  function fallback(state) {
+    var map = {
+      ask_name: [
+        "Ho ho, my hat slid over one ear. Is this Oliver, Ava, or both of you?",
+        "Come a little closer to the fire. Who's there — Oliver, Ava, or both?",
+        "I want the right stocking. Tell me your name. Oliver, Ava, or both if you're sharing."
+      ],
+      naughty: [
+        "I'm listening with both ears. Have you been nice, naughty, or a little of both? And one kind thing you did.",
+        "Take your time. Naughty, nice, or somewhere in the middle — and one nice thing from this year.",
+        "Just between us and the reindeer: how was your year, and what's one nice thing you did?"
+      ],
+      nice_thing: [
+        "I'd love one nice thing you did. Even a tiny one counts.",
+        "Think of one kind moment. Helping at home counts. Being good to each other counts.",
+        "One nice thing, and then we'll talk about wishes. What did you do?"
+      ],
+      wishes: [
+        "What would you like for Christmas? A toy, a book, something for outside — I'm writing.",
+        "Tell me a wish. One is plenty, and more is fine too.",
+        "The big book is open. What should I write for you?"
+      ],
+      more_wishes: [
+        "Anything else? Tell me another wish, or say that's it.",
+        "I can add more, or we can stop. Anything else?",
+        "Another wish? Or are we done with the list?"
+      ],
+      reindeer: [
+        "Which reindeer do you like best? Rudolph is already hoping.",
+        "Dasher, Dancer, Prancer, Vixen, Comet, Cupid, Donner, Blitzen, or Rudolph?",
+        "Pick a reindeer, any reindeer. Who's your favorite?"
+      ],
+      cookies: [
+        "Will you leave cookies and milk on Christmas Eve? A carrot makes you very popular, too.",
+        "Cookies and milk — yes or no? The reindeer are pretending not to listen.",
+        "Should I save room for a cookie?"
+      ],
+      done: [
+        "I'm still here by the fire. If it's your sibling's turn, just tell me their name.",
+        "Ho ho. The list is tucked away. Say Ava or Oliver if someone else wants a turn.",
+        "The workshop hums along. If the other one of you is ready, say so."
+      ]
+    };
+    return pick(state, "fall-" + state.phase, map[state.phase] || map.done);
+  }
+
+  function profile(state) {
+    if (state.speaker === "oliver" || state.speaker === "ava" || state.speaker === "both") {
+      return state.kids[state.speaker];
+    }
+    return state.kids.both;
+  }
+
+  function pushUnique(list, item) {
+    var key = item.toLowerCase();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].toLowerCase() === key) return;
+    }
+    if (list.length >= 24) return;
+    list.push(item);
+  }
+
+  function addWishes(state, items) {
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var n = normalize(item);
+      var forAva = /\bfor ava\b|\bavas\b/.test(n);
+      var forOliver = /\bfor oliver\b|\bolivers\b/.test(n);
+      if (state.speaker === "both" && forAva && !forOliver) pushUnique(state.kids.ava.wishes, item);
+      else if (state.speaker === "both" && forOliver && !forAva) pushUnique(state.kids.oliver.wishes, item);
+      else pushUnique(profile(state).wishes, item);
+    }
+  }
+
+  function quoteThing(thing) {
+    return "“" + cap(clip(thing, 140)) + ".”";
+  }
+
+  function helloLines(who) {
+    if (who === "oliver") {
+      return [
+        "Oliver! I've been hoping you'd write.",
+        "The elves just dusted the snow off a sack with your name on it. Donner is stomping outside my window, and Mrs. Claus says the cocoa is ready. It's a proper North Pole night. ❄️",
+        "Tell me honestly, Oliver. Have you been naughty or nice this year? And what's one nice thing you did?"
+      ];
+    }
+    if (who === "ava") {
+      return [
+        "Ava! Mrs. Claus peeked at the name and smiled.",
+        "The reindeer are in their fuzzy coats tonight, and the elves keep warming their hands on cocoa mugs. Snow is piled up to the workshop windows. ❄️",
+        "Tell me honestly, Ava. Have you been naughty or nice this year? And what's one nice thing you did?"
+      ];
+    }
+    return [
+      "Oliver and Ava! Both of you. My favorite siblings.",
+      "Mrs. Claus says hello, the elves are cheering, and Rudolph's nose just flickered. It's cold and sparkly at the North Pole tonight. ❄️",
+      "Have the two of you been naughty or nice this year? Tell me the truth, and one nice thing you did."
+    ];
+  }
+
+  function handoffLines(who) {
+    var name = kidName(who);
+    var mid = who === "ava"
+      ? "Mrs. Claus just slid a fresh cookie onto the plate. The snow is still coming down sideways. ❄️"
+      : who === "oliver"
+        ? "Donner thumped the stable door like he knew another friend had the phone."
+        : "The elves just pulled up another chair. It's a happy crowd now.";
+    var ask = who === "both"
+      ? "Have you two been naughty or nice this year? Tell me honestly, and one nice thing you did."
+      : "Tell me honestly, " + name + ". Have you been naughty or nice this year? And what's one nice thing you did?";
+    return [name + "! I wondered when you'd take a turn.", mid, ask];
+  }
+
+  function wishQuestion() {
+    return "What would you like for Christmas?";
+  }
+
+  function echoWish(state, item) {
+    var pretty = cap(item);
+    var lines = [
+      pretty + "! I'll pass that straight to the workshop.",
+      "Ho ho! " + pretty + ". The elves just perked up.",
+      pretty + "! Written in the big book, in my best handwriting.",
+      pretty + "! Mrs. Claus says that is a fine wish. 🎄"
+    ];
+    var line = lines[state.echoCursor % lines.length];
+    state.echoCursor = (state.echoCursor + 1) % lines.length;
+    return line;
+  }
+
+  function reindeerReply(names) {
+    if (!names || !names.length) {
+      return "They'll all claim you said their name. Rudolph is already glowing about it.";
+    }
+    if (names[0] === "all" || names.length >= 4) {
+      return "All of them? The stable just got very proud and very loud. 🦌";
+    }
+    var lines = {
+      rudolph: "Rudolph! He's in the barn pretending not to hear, and his nose just gave him away.",
+      dasher: "Dasher! He's the one who always wants to leave five minutes early. A fine choice.",
+      dancer: "Dancer! She practices twirls in the snow when she thinks nobody is looking.",
+      prancer: "Prancer! High knees, every time, even on the way to breakfast.",
+      vixen: "Vixen! Clever as a spark, and she knows it.",
+      comet: "Comet! Fastest start in the stable. Hold onto your hat.",
+      cupid: "Cupid! A soft heart and a very steady trot. Mrs. Claus approves.",
+      donner: "Donner! Steady and strong. I trust him on the windy nights.",
+      blitzen: "Blitzen! Quick as a flash, and first to the carrot bucket."
+    };
+    if (names.length === 1) return lines[names[0]];
+    var nice = names.slice(0, 3).map(function (n) { return cap(n); });
+    return nice.join(" and ") + "! I'll tell them. Try not to start a contest in the barn.";
+  }
+
+  function detectHandoff(state, raw) {
+    var t = normalize(raw);
+    var who = detectWho(raw);
+    if (!who) {
+      if (state.speaker === "oliver" && /\b(my sister|sister)\b/.test(t) && t.split(" ").length <= 6) return "ava";
+      if (state.speaker === "ava" && /\b(my brother|brother)\b/.test(t) && t.split(" ").length <= 6) return "oliver";
+      return null;
+    }
+    if (who === state.speaker) return null;
+    var cue = /\b(now|its|turn|next|here|im|i am|this is|hello|hi|hey|me|switch|other|shes|hes|her|his)\b/.test(t);
+    if (cue || t.split(" ").length <= 5) return who;
+    return null;
+  }
+
+  function applyPhase(state, raw) {
+    var text = String(raw || "").trim();
+    var t = normalize(text);
+    if (state.phase === "ask_name") {
+      var who = detectWho(text);
+      if (!who) return null;
+      state.speaker = who;
+      state.phase = "naughty";
+      return helloLines(who);
+    }
+    if (state.phase === "naughty") {
+      var verdict = detectVerdict(text);
+      var thing = extractNiceThing(text);
+      if (!verdict && !thing) return null;
+      var v = verdict || "nice";
+      profile(state).verdict = v;
+      var name = kidName(state.speaker);
+      if (thing) {
+        profile(state).niceThing = cap(clip(thing, 200));
+        state.phase = "wishes";
+        if (v === "nice") {
+          return [
+            "I had a feeling, " + name + ".",
+            quoteThing(thing) + " That's wonderful. That's exactly why you're on the nice list.",
+            wishQuestion()
+          ];
+        }
+        if (v === "naughty") {
+          return [
+            "Thank you for being honest, " + name + ". That was brave.",
+            quoteThing(thing) + " That still counts, very much. " + kindness(state.speaker) + " You're headed for the nice list.",
+            wishQuestion()
+          ];
+        }
+        return [
+          "A little naughty, and honest about it. I like that, " + name + ".",
+          quoteThing(thing) + " That's a real nice-list moment. " + kindness(state.speaker) + " You're headed for the nice list.",
+          wishQuestion()
+        ];
+      }
+      state.phase = "nice_thing";
+      if (v === "nice") {
+        return ["I had a feeling, " + name + ". The nice list already has a bright little star by your name. What's one nice thing you did this year?"];
+      }
+      if (v === "naughty") {
+        return [
+          "Thank you for being honest, " + name + ". That was brave.",
+          kindness(state.speaker) + " What's one nice thing you did, even a small one?"
+        ];
+      }
+      return [
+        "A little naughty, and honest about it. I like that, " + name + ". Everyone has a day that goes sideways.",
+        kindness(state.speaker) + " Tell me one nice thing you did this year."
+      ];
+    }
+    if (state.phase === "nice_thing") {
+      var pv = profile(state).verdict || "nice";
+      var nm = kidName(state.speaker);
+      if (isUnsure(text)) {
+        profile(state).niceThing = "";
+        state.phase = "wishes";
+        var listLine = pv === "nice"
+          ? "That's all right. Being honest counts. You're on the nice list, " + nm + "."
+          : "That's all right. Being honest counts. You're headed for the nice list, " + nm + ". I believe it.";
+        return [listLine, wishQuestion()];
+      }
+      profile(state).niceThing = cap(clip(text, 200));
+      state.phase = "wishes";
+      if (pv === "nice") {
+        return [quoteThing(text) + " I'll remember that. You're on the nice list, " + nm + ".", wishQuestion()];
+      }
+      return [quoteThing(text) + " You see? That's why you're headed for the nice list, " + nm + ".", wishQuestion()];
+    }
+    if (state.phase === "wishes" || state.phase === "more_wishes") {
+      if (isWishDecline(text)) {
+        var mine = profile(state).wishes.length;
+        if (state.speaker === "both") mine += state.kids.oliver.wishes.length + state.kids.ava.wishes.length;
+        state.phase = "reindeer";
+        if (!mine) {
+          return [
+            "No wishes at all? That's all right. Surprises are a North Pole specialty.",
+            "One more thing from the stable. Which reindeer is your favorite?"
+          ];
+        }
+        return [
+          "The list is tucked in my coat pocket.",
+          "One more thing from the stable. Which reindeer is your favorite?"
+        ];
+      }
+      var items = parseWishes(text);
+      if (!items.length) return null;
+      addWishes(state, items);
+      state.phase = "more_wishes";
+      var bits = items.map(function (item) { return echoWish(state, item); });
+      return [bits.join(" "), "Anything else?"];
+    }
+    if (state.phase === "reindeer") {
+      state.phase = "cookies";
+      return [
+        reindeerReply(detectReindeer(text)),
+        "And on Christmas Eve, will you leave cookies and milk? The reindeer asked me to mention carrots, too. 🍪"
+      ];
+    }
+    if (state.phase === "cookies") {
+      var yn = detectYesNo(text);
+      state.phase = "done";
+      var cookieLine = yn === "no"
+        ? "That's perfectly fine. A kind thought is a feast up here."
+        : yn === "yes"
+          ? "Wonderful. I'll save room, which is harder than it sounds."
+          : "Either way, thank you. The reindeer mostly care that you're sleeping soundly.";
+      var bed = (state.speaker === "both"
+        ? "Be kind to each other, and kind at home, all the way to Christmas."
+        : state.speaker === "oliver"
+          ? "Be kind to Ava, and kind at home, all the way to Christmas."
+          : "Be kind to Oliver, and kind at home, all the way to Christmas.")
+        + " On Christmas Eve, crawl into bed and close your eyes. That's when the sleigh bells work best.";
+      return [
+        cookieLine,
+        bed,
+        "I'll do my very best, and the elves are already busy! Merry Christmas, " + kidName(state.speaker) + ". Ho ho ho! 🎅"
+      ];
+    }
+    if (state.phase === "done") {
+      var next = detectHandoff(state, text);
+      if (next) {
+        state.speaker = next;
+        state.phase = "naughty";
+        if (next !== "both") {
+          state.kids[next].verdict = null;
+          state.kids[next].niceThing = null;
+        } else {
+          state.kids.both.verdict = null;
+          state.kids.both.niceThing = null;
+        }
+        return handoffLines(next);
+      }
+      if (/\b(add|another wish|one more thing|i also want|i forgot|can i add)\b/.test(t)) {
+        var more = parseWishes(text);
+        if (more.length) {
+          addWishes(state, more);
+          state.phase = "more_wishes";
+          return [more.map(function (item) { return echoWish(state, item); }).join(" "), "Anything else?"];
+        }
+        state.phase = "more_wishes";
+        return ["Of course. What else should I write down?"];
+      }
+      return null;
+    }
+    return null;
+  }
+
+  function replyLines(state, raw) {
+    var safe = safetyReply(raw);
+    if (safe) return [safe, nudge(state)];
+    var side = matchSide(state, raw);
+    if (side) return [side, nudge(state)];
+    var phase = applyPhase(state, raw);
+    if (phase && phase.length) return phase;
+    return [fallback(state)];
+  }
+
+  function reduce(state, raw) {
+    var text = String(raw || "").trim();
+    if (!text) return state;
+    var lines = replyLines(state, text);
+    state.messages.push({
+      role: "kid",
+      text: text.slice(0, 500),
+      ts: Date.now(),
+      who: state.speaker
+    });
+    for (var i = 0; i < lines.length; i++) {
+      state.messages.push({ role: "santa", text: lines[i], ts: Date.now() + i + 1 });
+    }
+    return state;
+  }
+
+  function sanitize(data) {
+    if (!data || typeof data !== "object") return null;
+    var base = freshState();
+    base.phase = PHASES.indexOf(data.phase) >= 0 ? data.phase : "ask_name";
+    base.speaker = data.speaker === "oliver" || data.speaker === "ava" || data.speaker === "both" ? data.speaker : null;
+    ["oliver", "ava", "both"].forEach(function (k) {
+      var src = data.kids && data.kids[k] ? data.kids[k] : {};
+      base.kids[k] = {
+        verdict: src.verdict === "nice" || src.verdict === "naughty" || src.verdict === "mixed" ? src.verdict : null,
+        niceThing: typeof src.niceThing === "string" ? src.niceThing.slice(0, 240) : null,
+        wishes: Array.isArray(src.wishes) ? src.wishes.filter(function (w) { return typeof w === "string"; }).slice(0, 24) : []
+      };
+    });
+    base.messages = Array.isArray(data.messages) ? data.messages.filter(function (m) {
+      return m && (m.role === "santa" || m.role === "kid") && typeof m.text === "string";
+    }).map(function (m) {
+      return {
+        role: m.role,
+        text: m.text.slice(0, 500),
+        ts: typeof m.ts === "number" ? m.ts : Date.now(),
+        who: m.who === "oliver" || m.who === "ava" || m.who === "both" ? m.who : null
+      };
+    }) : [];
+    base.cursors = data.cursors && typeof data.cursors === "object" ? data.cursors : {};
+    base.lastLine = typeof data.lastLine === "string" ? data.lastLine : "";
+    base.echoCursor = typeof data.echoCursor === "number" ? data.echoCursor : 0;
+    base.jokeCursor = typeof data.jokeCursor === "number" ? data.jokeCursor : 0;
+    if (!base.messages.length) return null;
+    return base;
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      return sanitize(JSON.parse(raw));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) { /* private mode or full storage: the chat still works */ }
+  }
+
+  var state = freshState();
+  var thread = document.getElementById("thread");
+  var draft = document.getElementById("draft");
+  var sendBtn = document.getElementById("send");
+  var composer = document.getElementById("composer");
+  var avatarHTML = document.getElementById("avatar").innerHTML;
+  var queue = [];
+  var pumping = false;
+  var playId = 0;
+  var ready = false;
+  var codeBuf = "";
+  var lastKidWho = null;
+
+  function wait(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function makeAvatar() {
+    var d = document.createElement("div");
+    d.className = "av";
+    d.innerHTML = avatarHTML;
+    return d;
+  }
+
+  function formatStamp(ts) {
+    var d = new Date(ts);
+    var now = new Date();
+    var time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    var same = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    if (same) return "Today " + time;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + time;
+  }
+
+  function whoLabel(who) {
+    if (who === "oliver") return "Oliver";
+    if (who === "ava") return "Ava";
+    if (who === "both") return "Oliver & Ava";
+    return "";
+  }
+
+  function refreshTails() {
+    var rows = thread.querySelectorAll(".row");
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var next = rows[i + 1];
+      var role = row.getAttribute("data-role");
+      var last = !next || next.getAttribute("data-role") !== role;
+      var bubble = row.querySelector(".bubble");
+      if (!bubble.classList.contains("typing")) {
+        bubble.classList.toggle("tail", last);
+        bubble.classList.toggle(role === "santa" ? "santa-tail" : "kid-tail", last);
+      }
+      var av = row.querySelector(".av");
+      if (av) av.classList.toggle("show", last);
+      if (last && next) row.classList.add("end");
+    }
+  }
+
+  function appendMessage(msg, animate) {
+    var prev = state.messages.filter(function (m) { return m._shown; }).pop();
+    // Timestamps use the messages already on screen.
+    var shown = thread.querySelectorAll(".row");
+    var prevShownTs = shown.length ? Number(shown[shown.length - 1].getAttribute("data-ts")) : 0;
+    if (!prevShownTs || msg.ts - prevShownTs > 5 * 60 * 1000) {
+      var time = document.createElement("div");
+      time.className = "time";
+      time.textContent = formatStamp(msg.ts);
+      thread.appendChild(time);
+    }
+    if (msg.role === "kid" && msg.who && msg.who !== lastKidWho) {
+      var lab = document.createElement("div");
+      lab.className = "who-label";
+      lab.textContent = whoLabel(msg.who);
+      thread.appendChild(lab);
+      lastKidWho = msg.who;
+    }
+    var row = document.createElement("div");
+    row.className = "row " + (msg.role === "kid" ? "kid" : "santa") + (animate ? " in" : "");
+    row.setAttribute("data-role", msg.role);
+    row.setAttribute("data-ts", String(msg.ts));
+    if (msg.role === "santa") row.appendChild(makeAvatar());
+    var bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = msg.text;
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    msg._shown = true;
+    refreshTails();
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function renderAll() {
+    thread.innerHTML = "";
+    lastKidWho = null;
+    state.messages.forEach(function (m) { m._shown = false; });
+    state.messages.forEach(function (m) { appendMessage(m, false); });
+  }
+
+  function showTyping() {
+    hideTyping();
+    var label = document.createElement("div");
+    label.className = "typing-label";
+    label.id = "typing-label";
+    label.textContent = "Santa is typing…";
+    var row = document.createElement("div");
+    row.className = "row santa";
+    row.id = "typing-row";
+    var av = makeAvatar();
+    av.classList.add("show");
+    row.appendChild(av);
+    var bubble = document.createElement("div");
+    bubble.className = "bubble tail santa-tail typing";
+    bubble.innerHTML = "<i></i><i></i><i></i>";
+    row.appendChild(bubble);
+    thread.appendChild(label);
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function hideTyping() {
+    var a = document.getElementById("typing-label");
+    var b = document.getElementById("typing-row");
+    if (a) a.remove();
+    if (b) b.remove();
+  }
+
+  function syncSend() {
+    var has = draft.value.trim().length > 0;
+    sendBtn.disabled = !has;
+    sendBtn.classList.toggle("ready", has);
+  }
+
+  async function revealSanta(messages, id) {
+    for (var i = 0; i < messages.length; i++) {
+      if (id !== playId) return;
+      showTyping();
+      await wait(typingDelay(messages[i].text));
+      if (id !== playId) return;
+      hideTyping();
+      appendMessage(messages[i], true);
+    }
+  }
+
+  async function runTurn(text, id) {
+    if (id !== playId) return;
+    var before = state.messages.length;
+    reduce(state, text);
+    save();
+    if (id !== playId) return;
+    var added = state.messages.slice(before);
+    if (!added.length) return;
+    appendMessage(added[0], true);
+    await revealSanta(added.slice(1), id);
+  }
+
+  async function pump() {
+    if (pumping || !ready) return;
+    pumping = true;
+    var id = playId;
+    while (queue.length && id === playId) {
+      var text = queue.shift();
+      await runTurn(text, id);
+    }
+    pumping = false;
+    if (queue.length && id === playId) pump();
+  }
+
+  function enqueue(text) {
+    queue.push(text);
+    if (ready && !pumping) pump();
+  }
+
+  function stopAll() {
+    playId++;
+    queue.length = 0;
+    pumping = false;
+    hideTyping();
+  }
+
+  async function playGreeting() {
+    var text = "Ho ho ho! Who's texting me tonight?";
+    var msg = { role: "santa", text: text, ts: Date.now() };
+    state.messages.push(msg);
+    save();
+    var id = playId;
+    pumping = true;
+    await revealSanta([msg], id);
+    if (id !== playId) return;
+    pumping = false;
+    ready = true;
+    if (queue.length) pump();
+  }
+
+  function boot() {
+    var saved = loadState();
+    if (saved) {
+      state = saved;
+      renderAll();
+      ready = true;
+      return;
+    }
+    state = freshState();
+    playGreeting();
+  }
+
+  function verdictLabel(v) {
+    if (v === "nice") return "Nice";
+    if (v === "naughty") return "Naughty";
+    if (v === "mixed") return "A little naughty";
+    return "Not yet";
+  }
+
+  function kidHas(k) {
+    return !!(k && (k.verdict || k.niceThing || (k.wishes && k.wishes.length)));
+  }
+
+  function fillCard(parent, title, kid) {
+    var card = document.createElement("section");
+    card.className = "kid-card";
+    var h = document.createElement("h3");
+    h.textContent = title;
+    card.appendChild(h);
+    if (!kidHas(kid)) {
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Hasn't told Santa yet.";
+      card.appendChild(empty);
+      parent.appendChild(card);
+      return;
+    }
+    var k1 = document.createElement("div");
+    k1.className = "k";
+    k1.textContent = "Naughty or nice";
+    var v1 = document.createElement("p");
+    v1.className = "v";
+    v1.textContent = verdictLabel(kid.verdict);
+    var k2 = document.createElement("div");
+    k2.className = "k";
+    k2.textContent = "A nice thing they shared";
+    var v2 = document.createElement("p");
+    v2.className = "v";
+    v2.textContent = kid.niceThing ? cap(kid.niceThing) : "—";
+    var k3 = document.createElement("div");
+    k3.className = "k";
+    k3.textContent = "Wish list";
+    card.appendChild(k1);
+    card.appendChild(v1);
+    card.appendChild(k2);
+    card.appendChild(v2);
+    card.appendChild(k3);
+    if (!kid.wishes || !kid.wishes.length) {
+      var none = document.createElement("p");
+      none.className = "v";
+      none.textContent = "No wishes yet";
+      card.appendChild(none);
+    } else {
+      var ul = document.createElement("ul");
+      ul.className = "wishes";
+      kid.wishes.forEach(function (w) {
+        var li = document.createElement("li");
+        li.textContent = cap(w);
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    }
+    parent.appendChild(card);
+  }
+
+  function renderParent() {
+    var body = document.getElementById("parent-body");
+    body.innerHTML = "";
+    fillCard(body, "Oliver", state.kids.oliver);
+    fillCard(body, "Ava", state.kids.ava);
+    if (kidHas(state.kids.both)) fillCard(body, "Oliver & Ava together", state.kids.both);
+  }
+
+  function openParent() {
+    closePasscode();
+    renderParent();
+    document.getElementById("confirm").classList.add("hidden");
+    document.getElementById("clear-btn").classList.remove("hidden");
+    document.getElementById("parent").classList.remove("hidden");
+  }
+
+  function closeParent() {
+    document.getElementById("parent").classList.add("hidden");
+  }
+
+  function openPasscode() {
+    codeBuf = "";
+    paintDots();
+    document.getElementById("passcode").classList.remove("hidden");
+  }
+
+  function closePasscode() {
+    document.getElementById("passcode").classList.add("hidden");
+    codeBuf = "";
+    paintDots();
+  }
+
+  function paintDots() {
+    var dots = document.querySelectorAll("#dots b");
+    for (var i = 0; i < dots.length; i++) dots[i].classList.toggle("on", i < codeBuf.length);
+  }
+
+  function enterDigit(d) {
+    if (codeBuf.length >= 4) return;
+    codeBuf += d;
+    paintDots();
+    if (codeBuf.length === 4) {
+      if (codeBuf === CODE) {
+        closePasscode();
+        openParent();
+      } else {
+        var box = document.getElementById("dots");
+        box.classList.remove("shake");
+        void box.offsetWidth;
+        box.classList.add("shake");
+        setTimeout(function () {
+          codeBuf = "";
+          paintDots();
+        }, 280);
+      }
+    }
+  }
+
+  function clearConversation() {
+    stopAll();
+    ready = false;
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    state = freshState();
+    thread.innerHTML = "";
+    lastKidWho = null;
+    closeParent();
+    playGreeting();
+  }
+
+  function makeSnow() {
+    var root = document.getElementById("snow");
+    var count = 26;
+    for (var i = 0; i < count; i++) {
+      var f = document.createElement("span");
+      f.className = "flake";
+      var size = 2 + (i % 5) * 1.15;
+      f.style.width = size + "px";
+      f.style.height = size + "px";
+      f.style.left = ((i * 37) % 100) + "%";
+      f.style.opacity = String(0.35 + (i % 4) * 0.12);
+      var dur = 12 + (i % 7) * 2.4;
+      f.style.animationDuration = dur + "s";
+      f.style.animationDelay = (-(i * 1.7)) + "s";
+      f.style.setProperty("--dx", ((i % 2 === 0 ? -1 : 1) * (12 + (i % 5) * 8)) + "px");
+      root.appendChild(f);
+    }
+  }
+
+  draft.addEventListener("input", syncSend);
+  composer.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = draft.value.trim();
+    if (!text) return;
+    draft.value = "";
+    syncSend();
+    enqueue(text);
+  });
+
+  var gear = document.getElementById("gear");
+  var holdTimer = null;
+  var didLong = false;
+  gear.addEventListener("pointerdown", function () {
+    didLong = false;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(function () {
+      didLong = true;
+      openParent();
+    }, 550);
+  });
+  function endHold() { clearTimeout(holdTimer); }
+  gear.addEventListener("pointerup", endHold);
+  gear.addEventListener("pointerleave", endHold);
+  gear.addEventListener("pointercancel", endHold);
+  gear.addEventListener("click", function () {
+    if (didLong) { didLong = false; return; }
+    openPasscode();
+  });
+  gear.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    didLong = true;
+    openParent();
+  });
+
+  document.getElementById("pad").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-digit]");
+    if (!btn) return;
+    enterDigit(btn.getAttribute("data-digit"));
+  });
+  document.getElementById("code-back").addEventListener("click", function () {
+    codeBuf = codeBuf.slice(0, -1);
+    paintDots();
+  });
+  document.getElementById("code-cancel").addEventListener("click", closePasscode);
+  document.getElementById("parent-done").addEventListener("click", closeParent);
+  document.getElementById("parent").addEventListener("click", function (e) {
+    if (e.target.id === "parent") closeParent();
+  });
+  document.getElementById("passcode").addEventListener("click", function (e) {
+    if (e.target.id === "passcode") closePasscode();
+  });
+  document.getElementById("clear-btn").addEventListener("click", function () {
+    document.getElementById("clear-btn").classList.add("hidden");
+    document.getElementById("confirm").classList.remove("hidden");
+  });
+  document.getElementById("clear-no").addEventListener("click", function () {
+    document.getElementById("confirm").classList.add("hidden");
+    document.getElementById("clear-btn").classList.remove("hidden");
+  });
+  document.getElementById("clear-yes").addEventListener("click", clearConversation);
+
+  document.addEventListener("keydown", function (e) {
+    var passOpen = !document.getElementById("passcode").classList.contains("hidden");
+    var parentOpen = !document.getElementById("parent").classList.contains("hidden");
+    if (passOpen) {
+      if (/^\d$/.test(e.key)) enterDigit(e.key);
+      else if (e.key === "Backspace") {
+        codeBuf = codeBuf.slice(0, -1);
+        paintDots();
+      } else if (e.key === "Escape") closePasscode();
+    } else if (parentOpen && e.key === "Escape") closeParent();
+  });
+
+  makeSnow();
+  syncSend();
+  boot();
+
+  window.Santa = {
+    freshState: freshState,
+    detectWho: detectWho,
+    detectVerdict: detectVerdict,
+    extractNiceThing: extractNiceThing,
+    parseWishes: parseWishes,
+    isWishDecline: isWishDecline,
+    detectReindeer: detectReindeer,
+    daysUntilChristmas: daysUntilChristmas,
+    christmasCopy: christmasCopy,
+    typingDelay: typingDelay,
+    rawDelay: rawDelay,
+    idle: function () {
+      return ready && !pumping && queue.length === 0 && !document.getElementById("typing-row");
+    },
+    replyLines: replyLines,
+    reduce: reduce,
+    getState: function () { return state; },
+    KEY: KEY
+  };
+})();
+</script>
+</body>
+</html>
